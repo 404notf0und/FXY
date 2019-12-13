@@ -5,6 +5,8 @@
 ![](https://img.shields.io/badge/Security%20Scenes-2-green)
 ![](https://img.shields.io/badge/Feature%20Methods-3-blue)
 
+[中文文档](https://github.com/404notf0und/FXY/blob/master/CN-README.md)
+
 FXY is an open-sourced feature engineering framework for data preprocessing, analysising, feature engineering and other tasks in security Scenes.
 
 # Features
