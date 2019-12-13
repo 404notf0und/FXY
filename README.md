@@ -21,7 +21,7 @@ FXY is an open-sourced feature engineering framework for data preprocessing, ana
 # Installation
 	git clone https://github.com/404notf0und/FXY
     pip install -r requirement.txt
-    python poc.py --help
+    python FXY.py --help
 
 # Documentation
 - Demand and Design
