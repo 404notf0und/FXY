@@ -1,6 +1,8 @@
 #Time:2017/10/04
 #Ref:https://www.cdxy.me/?p=775
 
+import os
+import pandas as pd
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
@@ -23,6 +25,12 @@ class demo:
         self.input_dim=3000
         self.output_dim=32
         self.tokenizer=None
+
+    def pre_processing(self,all_samples_filename):
+        datadir='data/url'
+        filename=os.path.join(datadir,all_samples_filename)
+        all_samples=pd.read_csv(filename,header=0,names=['payload','label'])
+        return all_samples['payload'],all_samples['label']
 
     def fxy_train(self,all_X_samples=None,all_Y_samples=None):
         """ feature engineering for trainning

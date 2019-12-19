@@ -1,5 +1,7 @@
 #Published:2017/07/21
 #Ref:https://github.com/SparkSharly/DL_for_xss
+import os
+import pandas as pd
 import csv,pickle,time
 from collections import Counter
 import matplotlib.pyplot as plt
@@ -36,6 +38,13 @@ class demo:
         self.words=[]
         self.datas=[]
 
+    def pre_processing(self,all_samples_filename):
+        print("[+] Start Preprocessing")
+        datadir='data/xss'
+        filename=os.path.join(datadir,all_samples_filename)
+        all_samples=pd.read_csv(filename,header=0,names=['payload','label'])
+        print("[+] Load Data")
+        return all_samples['payload'],all_samples['label']
 
     def fxy_train(self,all_X_samples=None,all_Y_samples=None):
         """get features x and y

@@ -1,6 +1,8 @@
 #2017/05/27
 #Ref:https://github.com/surajr/URL-Classification
 #Need to repaired
+import os
+import pandas as pd
 from urllib.parse import urlparse
 import tldextract
 import pandas as pd
@@ -26,6 +28,13 @@ class demo:
 		self.all_Y_samples=all_Y_samples
 		self.featureSet = pd.DataFrame(columns=('no of dots','presence of hyphen','len of url','presence of at',\
 						'presence of double slash','no of subdir','no of subdomain','len of domain','no of queries','is IP'))
+	
+	def pre_processing(self,all_samples_filename):
+        datadir='data/url_phish'
+        filename=os.path.join(datadir,all_samples_filename)
+        all_samples=pd.read_csv(filename,header=0,names=['payload','label'])
+        return all_samples['payload'],all_samples['label']
+
 	def fxy(self):
 		"""get features x and y
 		Parameters
