@@ -2,8 +2,8 @@
 
 ![](https://img.shields.io/badge/python-3.7-red) 
 ![](https://img.shields.io/github/license/404notf0und/fxy) 
-![](https://img.shields.io/badge/Security%20Scenes-2-green)
-![](https://img.shields.io/badge/Feature%20Methods-3-blue)
+![](https://img.shields.io/badge/Security%20Scenes-4-green)
+![](https://img.shields.io/badge/Feature%20Methods-4-blue)
 
 [中文文档](https://github.com/404notf0und/FXY/blob/master/CN-README.md)
 
