@@ -2,6 +2,7 @@
 #Ref:https://github.com/exp-db/AI-Driven-WAF
 #tfidf:https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
 
+import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from keras.utils import to_categorical
 import pandas as pd
@@ -29,7 +30,13 @@ class demo:
 
         self.vocabulary=None
         self.vectorizer=None
-    
+
+    def pre_processing(self,all_samples_filename):
+        datadir='data/url'
+        filename=os.path.join(datadir,all_samples_filename)
+        all_samples=pd.read_csv(filename,header=0,names=['payload','label'])
+        return all_samples['payload'],all_samples['label']
+        
     def fxy_train(self,all_X_samples=None,all_Y_samples=None):
         """get features x and y from trainning data
         Parameters

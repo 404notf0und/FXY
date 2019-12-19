@@ -21,13 +21,12 @@ def main():
 	feature=args.features
 	imp_module='feature_lib.'+scene+'_'+feature
 	#imp_module='feature_lib.'+feature
-	# print("[+] Starting Load module "+imp_module)
 	try:
 		lib = importlib.import_module(imp_module)
 	except:
-		print("[!] load feature process module error")
+		print("[!] Load module %s error" %imp_module)
 		exit()
-	print("[+] Loaded module "+imp_module)
+	print("[+] Load module "+imp_module)
 
 	# good_file=args.good_samples_filename
 	# bad_file=args.bad_samples_filename
@@ -36,20 +35,15 @@ def main():
 
 	if train_all_filename:
 		cs=lib.demo()
-		all_samples=pd.read_csv(data+train_all_filename,header=0,names=['payload','label'])
-		x,y=cs.fxy_train(all_X_samples=all_samples['payload'],all_Y_samples=all_samples['label'])
+		pre_x,pre_y=cs.pre_processing(train_all_filename)
+		x,y=cs.fxy_train(pre_x,pre_y)
 		#model=cs.model_train(x,y)
-		if test_all_filename:
-			all_samples=pd.read_csv(data+test_all_filename,header=0,names=['payload','label'])
-			x,y=cs.fxy_test(all_X_samples=all_samples['payload'],all_Y_samples=all_samples['label'])
-			#model=cs.model_train(x,y)
+	elif test_all_filename:
+		pre_x,pre_y=cs.pre_processing(test_all_filename)
+		x,y=cs.fxy_test(pre_x,pre_y)
+		#model=cs.model_test(x,y)
 	else:
-		# true_X_samples=pd.read_csv(data+good_samples,names=['payload'])
-		# false_X_samples=pd.read_csv(data+bad_samples,names=['payload'])
-		# cs=lib.demo(true_X_samples=true_X_samples['payload'],true_Y_samples=None,false_X_samples=false_X_samples['payload'],false_Y_samples=None,all_X_samples=None,all_Y_samples=None)
-		# x,y=cs.fxy() #level="word"
-		# model=cs.train(x,y)
-		print("[!] trainning data Not Found")
+		print("[!] trainning and testing data Not Found")
 
 if __name__=="__main__":
 	main()
