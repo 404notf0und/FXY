@@ -8,6 +8,8 @@
 - !2019/12/13 [+]readme.md 
 - !2019/12/18 [+]class4:malware feature extraction by integrating malware dynamic behavior dection by cnn@ApplePig@云影实验室@360
 - !2019/12/19 [+]demand and design
+- !2020/03/17 [+]重构TFIDF模块
+- !2020/03/17 [+]从NLP角度重构整体结构。数据层、特征化层、算法层分层coding，先不考虑具体安全场景，从NLP角度写通用代码。
 
 # Get
 - 文本向量化
@@ -26,6 +28,9 @@
 - 补全代码注释
 - demo算法集成
 - 控制器模块优化
+
+- TFIDF模块中word level补全
+- payload的解码
 
 # Ref
 - [如何从gensim word2vec获取词汇量？](https://codeday.me/bug/20190207/611442.html)

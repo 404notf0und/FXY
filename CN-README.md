@@ -20,7 +20,7 @@
 
     git clone https://github.com/404notf0und/FXY
     pip install -r requirement.txt
-    python FXY.py --help
+    python fxy.py 
 
 # 用户手册
 - 需求与设计

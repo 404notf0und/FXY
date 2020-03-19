@@ -1,50 +1,17 @@
-import argparse
-import pandas as pd
-import importlib
+from feature_vec.data import data_load
+from feature_vec.nlp_vec import tfidf,wordindex,word2vec
+from feature_vec.model import _LSTM,_CNN
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
 
-data='.\\data\\'
-
-def main():
-	parser = argparse.ArgumentParser(description="Fxy V0.1")
-
-	parser.add_argument("-s", "--scenes", help="security scenes")
-	parser.add_argument("-f", "--features", help="features engine")
-	#parser.add_argument("-m", "--train_or_test", help="trainning or testing")
-	# parser.add_argument("-g", "--good_samples_filename", help="good_samples")
-	# parser.add_argument("-b", "--bad_samples_filename", help="bad_samples")
-	parser.add_argument("-ta", "--train", help="all_samples_filename_trainning")
-	parser.add_argument("-tb", "--test", help="all_samples_filename_testing")
-
-	args = parser.parse_args()
-
-	scene=args.scenes
-	feature=args.features
-	imp_module='feature_lib.'+scene+'_'+feature
-	#imp_module='feature_lib.'+feature
-	try:
-		lib = importlib.import_module(imp_module)
-	except:
-		print("[!] Load module %s error" %imp_module)
-		exit()
-	print("[+] Load module "+imp_module)
-
-	# good_file=args.good_samples_filename
-	# bad_file=args.bad_samples_filename
-	train_all_filename=args.train
-	test_all_filename=args.test
-
-	if train_all_filename:
-		cs=lib.demo()
-		pre_x,pre_y=cs.pre_processing(train_all_filename)
-		x,y=cs.fxy_train(pre_x,pre_y)
-		#model=cs.model_train(x,y)
-	elif test_all_filename:
-		pre_x,pre_y=cs.pre_processing(test_all_filename)
-		x,y=cs.fxy_test(pre_x,pre_y)
-		#model=cs.model_test(x,y)
-	else:
-		print("[!] trainning and testing data Not Found")
-
-if __name__=="__main__":
-	main()
-
+x1,y1,x2,y2=data_load('part1.csv','part2.csv')
+wd=wordindex(level='word')
+fx1,fy1,fx2,fy2=wd.fit_vec(x1,y1,x2,y2)
+train_x, valid_x, train_y, valid_y = train_test_split( fx1, fy1, random_state=2019,test_size = 0.2) 
+#model=_CNN(wd.max_log_length,wd.input_dim,wd.output_dim)
+#model.fit(train_x, train_y, validation_data=(valid_x,valid_y), epochs=1, batch_size=128)
+lr=LogisticRegression()
+lr.fit(train_x,train_y)
+r1=lr.predict(fx2)
+print(classification_report(fy2,r1))
