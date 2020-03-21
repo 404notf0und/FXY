@@ -17,26 +17,20 @@ class tfidf():
         self.ngram=ngram
         self.decode_error=decode_error
 
-        self.vocabulary=None
+        self.dictionary=None
         self.vectorizer=None
-        
-        self.fxy_train_x=None
-        self.fxy_train_y=None
-        self.fxy_test_x=None
-        self.fxy_test_y=None
         
     def fit_transform(self,train_x='',train_y=''):
         vectorizer = TfidfVectorizer(min_df = 0.0,analyzer=self.level,sublinear_tf=True,decode_error=self.decode_error,ngram_range=self.ngram) 
-        self.fxy_train_x=vectorizer.fit_transform(train_x.values.astype('U')) # judge np.nan
+        fxy_train_x=vectorizer.fit_transform(train_x.values.astype('U')) # judge np.nan
+        fxy_train_y=train_y.values
         self.vectorizer=vectorizer
-        self.vocabulary=vectorizer.vocabulary_
-        self.fxy_train_y=train_y.values
-        return self.fxy_train_x,self.fxy_train_y
+        self.dictionary=vectorizer.vocabulary_
+        return fxy_train_x,fxy_train_y
 
-    def transform(self,test_x='',test_y=''):
-        self.fxy_test_x=self.vectorizer.transform(test_x.values.astype('U'))
-        self.fxy_test_y=test_y.values
-        return self.fxy_test_x,self.fxy_test_y
+    def transform(self,test_x=''):
+        fxy_test_x=self.vectorizer.transform(test_x.values.astype('U'))
+        return fxy_test_x
     # def plot(self,vec_x=None,vec_y=None):
     #     svd = TruncatedSVD(n_components=2,random_state=2020)
     #     data_svd=svd.fit_transform(vec_x)
@@ -65,10 +59,8 @@ class wordindex():
         self.train_length=None
         self.tokenizer=None
 
-        self.fxy_train_x=None
-        self.fxy_train_y=None
-        self.fxy_test_x=None
-        self.fxy_test_y=None
+        self.dictionary=None
+        self.dictionary_count=None
 
     def fit_transform(self,train_x='',train_y=''):
         if self.level=='char':
@@ -79,6 +71,8 @@ class wordindex():
         
         tokenizer = Tokenizer(filters='\t\n', char_level=char_level)
         tokenizer.fit_on_texts(train_x)
+        self.dictionary=tokenizer.word_index
+        self.dictionary_count=tokenizer.word_counts
         train_x = tokenizer.texts_to_sequences(train_x)
 
         if self.max_length:
@@ -90,12 +84,12 @@ class wordindex():
         self.train_length=len(train_index[0])
         self.tokenizer=tokenizer
 
-        self.fxy_train_x=train_index
-        self.fxy_train_y=train_y.values
+        fxy_train_x=train_index
+        fxy_train_y=train_y.values
         
-        return self.fxy_train_x,self.fxy_train_y
+        return fxy_train_x,fxy_train_y
 
-    def transform(self,test_x='',test_y=''):
+    def transform(self,test_x=''):
         self.tokenizer.fit_on_texts(test_x)
         test_x = self.tokenizer.texts_to_sequences(test_x)
         if self.max_length:
@@ -103,10 +97,9 @@ class wordindex():
         else:
             test_index=pad_sequences(test_x,maxlen=self.train_length)
 
-        self.fxy_test_x=test_index
-        self.fxy_test_y=test_y.values
+        fxy_test_x=test_index
 
-        return self.fxy_test_x,self.fxy_test_y
+        return fxy_test_x
 
 class word2vec():
     def __init__(self,out_dimension=3,vocabulary_size=300,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5,max_log_length=1024):
@@ -123,7 +116,7 @@ class word2vec():
         self.dictionary=None
         self.reverse_dictionary=None
         self.embeddings=None
-        self.count=None
+        self.dictionary_count=None
 
     def tokenizer(self,payload):
         #数字泛化为"0"
@@ -168,7 +161,7 @@ class word2vec():
         count=[["UNK",-1]]
         counter=Counter(words)
         count.extend(counter.most_common(self.vocabulary_size-1))
-        self.count=count
+        self.dictionary_count=count
         vocabulary=[c[0] for c in count]
         data_set=[]
         for data in datas:
@@ -216,7 +209,7 @@ class word2vec():
         fxy_train_y=train_y.values
         return fxy_train_x,fxy_train_y
 
-    def transform(self,test_x='',test_y=''):
+    def transform(self,test_x=''):
         test_seq=[]
         # tokenizer
         for i in range(len(test_x)):
@@ -237,8 +230,7 @@ class word2vec():
             fxy_test_x=self._vec2(test_index)
 
         #fxy_test_x=np.array(test_vec)
-        fxy_test_y=test_y.values
-        return fxy_test_x,fxy_test_y
+        return fxy_test_x
 
     def _index(self,seq):
         all_index=[]

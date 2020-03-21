@@ -23,8 +23,12 @@ def data_load(trainfile=None,testfile=None):
         test_samples.apply(decode,axis=1)
         #test_samples=test_samples.sample(frac=0.3).reset_index() 
         test_x=test_samples['payload'].astype(str)
-        test_y=test_samples['label']
-    return train_x,train_y,test_x,test_y 
+        if 'label' in test_samples.columns:
+            test_y=test_samples['label']
+            return train_x,train_y,test_x,test_y 
+        else:
+            return train_x,train_y,test_x,test_y
+    return train_x,train_y,test_x,test_y
 
 def decode(payload):
     return unquote(unquote(str(payload['payload'])))
