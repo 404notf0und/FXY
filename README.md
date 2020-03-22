@@ -21,7 +21,12 @@ FXY is an open-sourced feature engineering framework for data preprocessing, ana
 # Installation
 	git clone https://github.com/404notf0und/FXY
     pip install -r requirement.txt
-    python fxy.py 
+
+# Usage
+	from feature_vec.nlp2vec import tfidf,wordindex,word2vec
+	nlp=word2vec(one_class=True,vocabulary_size=300,out_dimension=2)
+	fx1,fy1=nlp.fit_transform(x1,y1)
+	fx2=nlp.transform(x2)
 
 # Documentation
 - Demand and Design
