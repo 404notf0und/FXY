@@ -23,10 +23,20 @@ FXY is an open-sourced feature engineering framework for data preprocessing, ana
     pip install -r requirement.txt
 
 # Usage
+	from feature_vec.data import data_load
 	from feature_vec.nlp2vec import tfidf,wordindex,word2vec
+	from sklearn.linear_model import LogisticRegression
+	from sklearn.metrics import classification_report
+
+	x1,y1,x2,y2=data_load('part1.csv','part3.csv')
 	nlp=word2vec(one_class=True,vocabulary_size=300,out_dimension=2)
 	fx1,fy1=nlp.fit_transform(x1,y1)
 	fx2=nlp.transform(x2)
+
+	lr=LogisticRegression()
+	lr.fit(fx1,fy1)
+	r2=lr.predict(fx2)
+	print(classification_report(y2,r2))
 
 # Documentation
 - Demand and Design
