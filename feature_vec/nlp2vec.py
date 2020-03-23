@@ -90,7 +90,6 @@ class wordindex():
         return fxy_train_x,fxy_train_y
 
     def transform(self,test_x=''):
-        self.tokenizer.fit_on_texts(test_x)
         test_x = self.tokenizer.texts_to_sequences(test_x)
         if self.max_length:
             test_index=pad_sequences(test_x,maxlen=self.max_length)
