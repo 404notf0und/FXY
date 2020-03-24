@@ -56,7 +56,6 @@ class wordindex():
         self.level=level
         self.max_length=max_length
         self.input_dim=input_dim
-        self.train_length=None
         self.tokenizer=None
 
         self.dictionary=None
@@ -79,9 +78,9 @@ class wordindex():
             train_index=pad_sequences(train_x,maxlen=self.max_length)
         else:
             train_index=pad_sequences(train_x)
+            self.max_length=len(train_index[0])
 
         self.input_dim = len(tokenizer.word_index)+1
-        self.train_length=len(train_index[0])
         self.tokenizer=tokenizer
 
         fxy_train_x=train_index
@@ -91,11 +90,7 @@ class wordindex():
 
     def transform(self,test_x=''):
         test_x = self.tokenizer.texts_to_sequences(test_x)
-        if self.max_length:
-            test_index=pad_sequences(test_x,maxlen=self.max_length)
-        else:
-            test_index=pad_sequences(test_x,maxlen=self.train_length)
-
+        test_index=pad_sequences(test_x,maxlen=self.max_length)
         fxy_test_x=test_index
 
         return fxy_test_x
