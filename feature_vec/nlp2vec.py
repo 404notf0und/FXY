@@ -66,9 +66,8 @@ class wordindex():
             char_level=True
         else:
             char_level=False
-        train_max_log_length=0
         
-        tokenizer = Tokenizer(filters='\t\n', char_level=char_level)
+        tokenizer = Tokenizer(char_level=char_level)
         tokenizer.fit_on_texts(train_x)
         self.dictionary=tokenizer.word_index
         self.dictionary_count=tokenizer.word_counts
@@ -124,9 +123,8 @@ class word2vec():
         r = '''
         (?x)[\w\.]+?\(
         |\)
-        |\'
-        |\"
-        |\@
+        |'
+        |"
         |"\w+?"
         |'\w+?'
         |http://\w
