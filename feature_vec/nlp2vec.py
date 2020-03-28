@@ -106,7 +106,6 @@ class word2vec():
         self.num_iter=num_iter
         self.input_dim=embedding_size
         self.max_length=max_length
-        self.train_length=None
 
         self.dictionary=None
         self.reverse_dictionary=None
@@ -195,7 +194,7 @@ class word2vec():
             train_index=pad_sequences(train_index,maxlen=self.max_length,value=-1)
         else:
             train_index=pad_sequences(train_index,value=-1)
-        self.train_length=len(train_index[0])
+            self.max_length=len(train_index[0])
 
         #word2vec
         if self.out_dimension==3:
@@ -215,11 +214,7 @@ class word2vec():
             test_seq.append(word)
         # index
         test_index=self._index(test_seq)
-        if self.max_length:
-            test_index=pad_sequences(test_index,maxlen=self.max_length,value=-1)
-        else:
-            test_index=pad_sequences(test_index,maxlen=self.train_length,value=-1)
-
+        test_index=pad_sequences(test_index,maxlen=self.max_length,value=-1)
         # vec
         if self.out_dimension==3:
             fxy_test_x=self._vec3(test_index)
