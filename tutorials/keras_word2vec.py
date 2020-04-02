@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, Dense, Reshape, merge
+from keras.layers import Input, Dense, Reshape, dot
 from keras.layers.embeddings import Embedding
 from keras.preprocessing.sequence import skipgrams
 from keras.preprocessing import sequence
@@ -69,8 +69,8 @@ data, count, dictionary, reverse_dictionary = collect_data(vocabulary_size=vocab
 print(data[:7])
 
 window_size = 3
-vector_dim = 300
-epochs = 200000
+vector_dim = 128
+epochs = 100000
 
 valid_size = 16     # Random set of words to evaluate similarity on.
 valid_window = 100  # Only pick dev samples in the head of the distribution.
@@ -95,10 +95,8 @@ context = embedding(input_context)
 context = Reshape((vector_dim, 1))(context)
 
 # setup a cosine similarity operation which will be output in a secondary model
-similarity = merge([target, context], mode='cos', dot_axes=0)
-
-# now perform the dot product operation to get a similarity measure
-dot_product = merge([target, context], mode='dot', dot_axes=1)
+similarity = dot([target, context], normalize=True, axes=1)
+dot_product = dot([target, context], normalize=False, axes=1)
 dot_product = Reshape((1,))(dot_product)
 # add the sigmoid output layer
 output = Dense(1, activation='sigmoid')(dot_product)
