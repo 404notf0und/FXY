@@ -39,8 +39,7 @@ words = read_data(filename)
 print('Data size', len(words))
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
-vocabulary_size = 50000
-
+vocabulary_size = 3000
 
 def build_dataset(words):
   count = [['UNK', -1]]
@@ -114,10 +113,6 @@ valid_window = 100  # Only pick dev samples in the head of the distribution.
 valid_examples = np.random.choice(valid_window, valid_size, replace=False)
 num_sampled = 64    # Number of negative examples to sample.
 
-
-
-
-
 # Input data.
 #train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
 #train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
@@ -134,18 +129,6 @@ with tf.device('/cpu:0'):
       tf.random.normal([vocabulary_size, embedding_size],
                           stddev=1.0 / math.sqrt(embedding_size)))
   nce_biases = tf.Variable(tf.zeros([vocabulary_size]))
-
-# Compute the average NCE loss for the batch.
-# tf.nce_loss automatically draws a new sample of the negative labels each
-# time we evaluate the loss.
-
-
-# Construct the SGD optimizer using a learning rate of 1.0.
-
-
-# Compute the cosine similarity between minibatch examples and all embeddings.
-
-
 
 # Step 5: Begin training.
 num_steps = 20001
