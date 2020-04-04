@@ -1,15 +1,22 @@
 import os
+import sys
+import string
 from sklearn.feature_extraction.text import TfidfVectorizer
-from keras.preprocessing.text import Tokenizer
 import numpy as np
 from keras.preprocessing.sequence import pad_sequences
-from .data import data_load
 import requests
 from urllib.parse import unquote
 import re
 import nltk
-from collections import Counter
 from gensim.models.word2vec import Word2Vec
+from collections import Counter
+from collections import OrderedDict
+from collections import defaultdict
+
+if sys.version_info < (3,):
+    maketrans = string.maketrans
+else:
+    maketrans = str.maketrans
 
 class tfidf():
     def __init__(self,level="char",ngram=(1,3),decode_error='ignore'):
@@ -31,6 +38,7 @@ class tfidf():
     def transform(self,test_x=''):
         fxy_test_x=self.vectorizer.transform(test_x.values.astype('U'))
         return fxy_test_x
+
     # def plot(self,vec_x=None,vec_y=None):
     #     svd = TruncatedSVD(n_components=2,random_state=2020)
     #     data_svd=svd.fit_transform(vec_x)
@@ -50,47 +58,179 @@ class tfidf():
     #     plt.legend((type1, type2),('normal','malicious'))
     #     plt.show()
 
+def tokenizer(payload):
+    #数字泛化为"0"
+    payload=payload.lower()
+    payload=unquote(unquote(payload))
+    payload,num=re.subn(r'\d+',"0",payload)
+    #替换url为”http://u
+    payload,num=re.subn(r'(http|https)://[a-zA-Z0-9\.@&/#!#\?]+', "http://u", payload)
+    #分词
+    #r = r'\w+'
+    r = '''
+    (?x)[\w\.]+?\(
+    |\)
+    |'
+    |"
+    |"\w+?"
+    |'\w+?'
+    |http://\w
+    |</\w+>
+    |<\w+>
+    |<\w+
+    |\w+=
+    |>
+    |[\w\.]+
+    '''
+    return nltk.regexp_tokenize(payload, r)
+
+def text_to_word_sequence(text,
+                              filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
+                              lower=True, split=" ",punctuation=False):
+    if lower:
+        text = text.lower()
+    if not punctuation:
+
+        if sys.version_info < (3,):
+            if isinstance(text, unicode):
+                translate_map = dict((ord(c), unicode(split)) for c in filters)
+                text = text.translate(translate_map)
+            elif len(split) == 1:
+                translate_map = maketrans(filters, split * len(filters))
+                text = text.translate(translate_map)
+            else:
+                for c in filters:
+                    text = text.replace(c, split)
+        else:
+            translate_dict = dict((c, split) for c in filters)
+            translate_map = maketrans(translate_dict)
+            text = text.translate(translate_map)
+
+        seq = text.split(split)
+    else:
+        seq=tokenizer(text)
+    return [i for i in seq if i]
 
 class wordindex():
-    def __init__(self,level='char',max_length=None,input_dim=None):
-        self.level=level
-        self.max_length=max_length
-        self.input_dim=input_dim
-        self.tokenizer=None
+    def __init__(self, num_words=None,
+                 filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
+                 lower=True,
+                 split=' ',
+                 char_level=False,
+                 oov_token=None,
+                 max_length=None,
+                 punctuation=False):
 
-        self.dictionary=None
-        self.dictionary_count=None
+        self.word_counts = OrderedDict()
+        self.word_docs = defaultdict(int)
+        self.filters = filters
+        self.split = split
+        self.lower = lower
+        self.num_words = num_words
+        self.char_level = char_level
+        self.oov_token = oov_token
+        self.index_docs = defaultdict(int)
+        self.word_index = dict()
+        self.index_word = dict()
+
+        self.max_length=max_length
+        self.punctuation=punctuation
+
+        self.input_dim=None
+
+    def texts_to_sequences(self, texts):
+        return list(self.texts_to_sequences_generator(texts))
+
+    def texts_to_sequences_generator(self, texts):
+        num_words = self.num_words
+        oov_token_index = self.word_index.get(self.oov_token)
+        for text in texts:
+            if self.char_level or isinstance(text, list):
+                if self.lower:
+                    if isinstance(text, list):
+                        text = [text_elem.lower() for text_elem in text]
+                    else:
+                        text = text.lower()
+                seq = text
+            else:
+                seq = text_to_word_sequence(text,
+                                            self.filters,
+                                            self.lower,
+                                            self.split,
+                                            self.punctuation)
+            vect = []
+            for w in seq:
+                i = self.word_index.get(w)
+                if i is not None:
+                    if num_words and i >= num_words:
+                        if oov_token_index is not None:
+                            vect.append(oov_token_index)
+                    else:
+                        vect.append(i)
+                elif self.oov_token is not None:
+                    vect.append(oov_token_index)
+            yield vect
+
+    def fit_on_texts(self, texts):
+        for text in texts:
+            if self.char_level or isinstance(text, list):
+                if self.lower:
+                    if isinstance(text, list):
+                        text = [text_elem.lower() for text_elem in text]
+                    else:
+                        text = text.lower()
+                seq = text
+            else:
+                seq = text_to_word_sequence(text,
+                                            self.filters,
+                                            self.lower,
+                                            self.split,
+                                            self.punctuation)
+            for w in seq:
+                if w in self.word_counts:
+                    self.word_counts[w] += 1
+                else:
+                    self.word_counts[w] = 1
+            for w in set(seq):
+                # In how many documents each word occurs
+                self.word_docs[w] += 1
+
+        wcounts = list(self.word_counts.items())
+        wcounts.sort(key=lambda x: x[1], reverse=True)
+        # forcing the oov_token to index 1 if it exists
+        if self.oov_token is None:
+            sorted_voc = []
+        else:
+            sorted_voc = [self.oov_token]
+        sorted_voc.extend(wc[0] for wc in wcounts)
+
+        # note that index 0 is reserved, never assigned to an existing word
+        self.word_index = dict(
+            list(zip(sorted_voc, list(range(1, len(sorted_voc) + 1)))))
+
+        self.index_word = dict((c, w) for w, c in self.word_index.items())
+
+        for w, c in list(self.word_docs.items()):
+            self.index_docs[self.word_index[w]] = c
 
     def fit_transform(self,train_x='',train_y=''):
-        if self.level=='char':
-            char_level=True
-        else:
-            char_level=False
-        
-        tokenizer = Tokenizer(char_level=char_level)
-        tokenizer.fit_on_texts(train_x)
-        self.dictionary=tokenizer.word_index
-        self.dictionary_count=tokenizer.word_counts
-        train_x = tokenizer.texts_to_sequences(train_x)
+        self.fit_on_texts(train_x)
+        train_x = self.texts_to_sequences(train_x)
 
         if self.max_length:
-            train_index=pad_sequences(train_x,maxlen=self.max_length)
+            fxy_train_x=pad_sequences(train_x,maxlen=self.max_length)
         else:
-            train_index=pad_sequences(train_x)
-            self.max_length=len(train_index[0])
+            fxy_train_x=pad_sequences(train_x)
+            self.max_length=len(fxy_train_x[0])
 
-        self.input_dim = len(tokenizer.word_index)+1
-        self.tokenizer=tokenizer
-
-        fxy_train_x=train_index
+        self.input_dim = len(self.word_index)+1
         fxy_train_y=train_y.values
         
         return fxy_train_x,fxy_train_y
 
     def transform(self,test_x=''):
-        test_x = self.tokenizer.texts_to_sequences(test_x)
-        test_index=pad_sequences(test_x,maxlen=self.max_length)
-        fxy_test_x=test_index
+        test_x = self.texts_to_sequences(test_x)
+        fxy_test_x=pad_sequences(test_x,maxlen=self.max_length)
 
         return fxy_test_x
 
@@ -111,32 +251,6 @@ class word2vec():
         self.embeddings=None
         self.dictionary_count=None
 
-    def tokenizer(self,payload):
-        #数字泛化为"0"
-        payload=payload.lower()
-        payload=unquote(unquote(payload))
-        payload,num=re.subn(r'\d+',"0",payload)
-        #替换url为”http://u
-        payload,num=re.subn(r'(http|https)://[a-zA-Z0-9\.@&/#!#\?]+', "http://u", payload)
-        #分词
-        #r = r'\w+'
-        r = '''
-        (?x)[\w\.]+?\(
-        |\)
-        |'
-        |"
-        |"\w+?"
-        |'\w+?'
-        |http://\w
-        |</\w+>
-        |<\w+>
-        |<\w+
-        |\w+=
-        |>
-        |[\w\.]+
-        '''
-        return nltk.regexp_tokenize(payload, r)
-
     def fit_transform(self,train_x='',train_y=''):
         if self.one_class:
             model_X_samples=train_x[train_y==1].reset_index(drop=True) 
@@ -148,7 +262,7 @@ class word2vec():
         words=[]
         for i in range(len(model_X_samples)):
             payload=str(model_X_samples.loc[i])
-            word=self.tokenizer(payload)
+            word=tokenizer(payload)
             datas.append(word)
             words+=word
 
@@ -180,7 +294,7 @@ class word2vec():
         train_seq=[]
         for i in range(len(train_x)):
             payload=str(train_x.loc[i])
-            word=self.tokenizer(payload)
+            word=tokenizer(payload)
             train_seq.append(word)
 
         self.dictionary=dict([(self.embeddings.index2word[i],i) for i in range(len(self.embeddings.index2word))])
@@ -208,7 +322,7 @@ class word2vec():
         # tokenizer
         for i in range(len(test_x)):
             payload=str(test_x.loc[i])
-            word=self.tokenizer(payload)
+            word=tokenizer(payload)
             test_seq.append(word)
         # index
         test_index=self._index(test_seq)

@@ -3,7 +3,6 @@ import pandas as pd
 import requests
 from urllib.parse import unquote
 
-
 def data_load(trainfile=None,testfile=None):
     datadir='./data/'
     train_x=''
