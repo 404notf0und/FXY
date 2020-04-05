@@ -235,21 +235,25 @@ class wordindex():
         return fxy_test_x
 
 class word2vec():
-    def __init__(self,one_class=True,out_dimension=3,vocabulary_size=None,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5,max_log_length=1024):
+    def __init__(self,pretrain=True,one_class=True,out_dimension=3,vocabulary_size=None,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5,max_log_length=1024):
         self.one_class=one_class
         self.out_dimension=out_dimension
         self.vocabulary_size=vocabulary_size
         self.embedding_size=embedding_size
+        self.input_dim=embedding_size
         self.skip_window=skip_window
         self.num_sampled=num_sampled
         self.num_iter=num_iter
-        self.input_dim=embedding_size
         self.max_length=max_length
 
         self.dictionary=None
         self.reverse_dictionary=None
         self.embeddings=None
         self.dictionary_count=None
+
+        self.embeddings_matrix=None
+
+        self.pretrain=pretrain
 
     def fit_transform(self,train_x='',train_y=''):
         if self.one_class:
@@ -265,15 +269,16 @@ class word2vec():
             word=tokenizer(payload)
             datas.append(word)
             words+=word
-
+        
         # Generalization by malicious samples top 3000 word dictionary 
-        count=[["UNK",-1]]
+        count=[["UNK",0]]
         counter=Counter(words)
         if self.vocabulary_size is not None:
             count.extend(counter.most_common(self.vocabulary_size-1))
         else:
             count.extend(counter.most_common())
         self.dictionary_count=count
+        
         vocabulary=[c[0] for c in count]
         data_set=[]
         for data in datas:
@@ -285,10 +290,19 @@ class word2vec():
                     d_set.append("UNK")
                     count[0][1]+=1
             data_set.append(d_set)
-
+        
         # Word2Vec model
         model=Word2Vec(data_set,size=self.embedding_size,window=self.skip_window,negative=self.num_sampled,iter=self.num_iter)
         self.embeddings=model.wv
+
+        # get pretrain maxtrix
+        word2idx = {"_PAD": 0}
+        vocab_list = [(k, model.wv[k]) for k, v in model.wv.vocab.items()]
+        self.embeddings_matrix = np.zeros((len(model.wv.vocab.items()) + 1, model.vector_size))
+        for i in range(len(vocab_list)):
+            word = vocab_list[i][0]
+            word2idx[word] = i + 1
+            self.embeddings_matrix[i + 1] = vocab_list[i][1]
 
         # word2seq
         train_seq=[]
@@ -303,10 +317,14 @@ class word2vec():
         #word2index
         train_index=self._index(train_seq)
         if self.max_length:
-            train_index=pad_sequences(train_index,maxlen=self.max_length,value=-1)
+            train_index=pad_sequences(train_index,maxlen=self.max_length,value=0)
         else:
-            train_index=pad_sequences(train_index,value=-1)
+            train_index=pad_sequences(train_index,value=0)
             self.max_length=len(train_index[0])
+        # if pretrain or not    
+        if self.pretrain:
+            self.input_dim=self.embeddings_matrix.shape[0]
+            return train_index,train_y.values
 
         #word2vec
         if self.out_dimension==3:
@@ -326,7 +344,9 @@ class word2vec():
             test_seq.append(word)
         # index
         test_index=self._index(test_seq)
-        test_index=pad_sequences(test_index,maxlen=self.max_length,value=-1)
+        test_index=pad_sequences(test_index,maxlen=self.max_length,value=0)
+        if self.pretrain:
+            return test_index
         # vec
         if self.out_dimension==3:
             fxy_test_x=self._vec3(test_index)
@@ -343,18 +363,18 @@ class word2vec():
                 if word in self.dictionary.keys():
                     index.append(self.dictionary[word])
                 else:
-                    index.append(-1)
+                    index.append(0)
             all_index.append(index)
         return all_index
 
     def _vec3(self,index):
-        all_vec=np.zeros(shape=(len(index),len(index[0]),self.input_dim))
+        all_vec=np.zeros(shape=(len(index),len(index[0]),self.embedding_size))
         j=0
         for x in index:
-            vec=np.zeros(shape=(len(index[0]),self.input_dim))
+            vec=np.zeros(shape=(len(index[0]),self.embedding_size))
             i=0
             for word in x:
-                if word!=-1:
+                if word!=0:
                     vec[i]=self.embeddings[self.reverse_dictionary[word]]
                     #vec.append(self.embeddings[self.reverse_dictionary[word]])
                 else:
@@ -367,19 +387,19 @@ class word2vec():
         return all_vec
 
     def _vec2(self,index):
-        all_vec=np.zeros(shape=(len(index),len(index[0])*self.input_dim))
+        all_vec=np.zeros(shape=(len(index),len(index[0])*self.embedding_size))
         j=0
         for x in index:
-            vec=np.zeros(shape=len(index[0])*self.input_dim)
+            vec=np.zeros(shape=len(index[0])*self.embedding_size)
             i=0
             for word in x:
-                if word!=-1:
-                    vec[i:i+self.input_dim]=self.embeddings[self.reverse_dictionary[word]]
+                if word!=0:
+                    vec[i:i+self.embedding_size]=self.embeddings[self.reverse_dictionary[word]]
                     #vec.extend(self.embeddings[self.reverse_dictionary[word]])
                 else:
-                    vec[i:i+self.input_dim]=[0.0]*self.embedding_size
+                    vec[i:i+self.embedding_size]=[0.0]*self.embedding_size
                     #vec.extend([0.0]*len(self.embeddings['UNK']))
-                i=i+self.input_dim
+                i=i+self.embedding_size
             #all_vec.append(vec)
             all_vec[j]=vec
             j=j+1
