@@ -4,6 +4,7 @@ import string
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 from keras.preprocessing.sequence import pad_sequences
+from keras.utils import to_categorical
 import requests
 from urllib.parse import unquote
 import re
@@ -58,7 +59,7 @@ class tfidf():
     #     plt.legend((type1, type2),('normal','malicious'))
     #     plt.show()
 
-def tokenizer(payload):
+def tokenizer(payload,punctuation):
     #数字泛化为"0"
     payload=payload.lower()
     payload=unquote(unquote(payload))
@@ -66,22 +67,28 @@ def tokenizer(payload):
     #替换url为”http://u
     payload,num=re.subn(r'(http|https)://[a-zA-Z0-9\.@&/#!#\?]+', "http://u", payload)
     #分词
-    #r = r'\w+'
-    r = '''
-    (?x)[\w\.]+?\(
-    |\)
-    |'
-    |"
-    |"\w+?"
-    |'\w+?'
-    |http://\w
-    |</\w+>
-    |<\w+>
-    |<\w+
-    |\w+=
-    |>
-    |[\w\.]+
-    '''
+    if punctuation=='concise':
+        r=r'\w+'
+    elif punctuation=='all':
+        r=r'\w+|\S'
+    elif punctuation=='define':
+        r = '''
+        (?x)[\w\.]+?\(
+        |\)
+        |'
+        |"
+        |"\w+?"
+        |'\w+?'
+        |http://\w
+        |</\w+>
+        |<\w+>
+        |<\w+
+        |\w+=
+        |>
+        |[\w\.]+
+        '''
+    else:
+        raise ValueError('punctuation values consist of concise,all,define.')
     return nltk.regexp_tokenize(payload, r)
 
 def text_to_word_sequence(text,
@@ -108,7 +115,7 @@ def text_to_word_sequence(text,
 
         seq = text.split(split)
     else:
-        seq=tokenizer(text)
+        seq=tokenizer(text,punctuation)
     return [i for i in seq if i]
 
 class wordindex():
@@ -119,7 +126,7 @@ class wordindex():
                  char_level=False,
                  oov_token=None,
                  max_length=None,
-                 punctuation=False):
+                 punctuation='concise'):
 
         self.word_counts = OrderedDict()
         self.word_docs = defaultdict(int)
@@ -224,8 +231,11 @@ class wordindex():
             self.max_length=len(fxy_train_x[0])
 
         self.input_dim = len(self.word_index)+1
-        fxy_train_y=train_y.values
-        
+
+        if train_y.nunique()>2:
+            fxy_train_y=to_categorical(train_y)
+        else:
+            fxy_train_y=train_y.values    
         return fxy_train_x,fxy_train_y
 
     def transform(self,test_x=''):
@@ -235,7 +245,7 @@ class wordindex():
         return fxy_test_x
 
 class word2vec():
-    def __init__(self,pretrain=True,one_class=True,out_dimension=3,vocabulary_size=None,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5,max_log_length=1024):
+    def __init__(self,punctuation='concise',pretrain=False,one_class=True,out_dimension=3,vocabulary_size=None,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5,max_log_length=1024):
         self.one_class=one_class
         self.out_dimension=out_dimension
         self.vocabulary_size=vocabulary_size
@@ -252,8 +262,9 @@ class word2vec():
         self.dictionary_count=None
 
         self.embeddings_matrix=None
-
         self.pretrain=pretrain
+
+        self.punctuation=punctuation
 
     def fit_transform(self,train_x='',train_y=''):
         if self.one_class:
@@ -266,7 +277,7 @@ class word2vec():
         words=[]
         for i in range(len(model_X_samples)):
             payload=str(model_X_samples.loc[i])
-            word=tokenizer(payload)
+            word=tokenizer(payload,self.punctuation)
             datas.append(word)
             words+=word
         
@@ -308,7 +319,7 @@ class word2vec():
         train_seq=[]
         for i in range(len(train_x)):
             payload=str(train_x.loc[i])
-            word=tokenizer(payload)
+            word=tokenizer(payload,self.punctuation)
             train_seq.append(word)
 
         self.dictionary=dict([(self.embeddings.index2word[i],i) for i in range(len(self.embeddings.index2word))])
@@ -321,10 +332,15 @@ class word2vec():
         else:
             train_index=pad_sequences(train_index,value=0)
             self.max_length=len(train_index[0])
+        # label class num
+        if train_y.nunique()>2:
+            fxy_train_y=to_categorical(train_y)
+        else:
+            fxy_train_y=train_y.values 
         # if pretrain or not    
         if self.pretrain:
             self.input_dim=self.embeddings_matrix.shape[0]
-            return train_index,train_y.values
+            return train_index,fxy_train_y
 
         #word2vec
         if self.out_dimension==3:
@@ -332,7 +348,6 @@ class word2vec():
         else:
             fxy_train_x=self._vec2(train_index)
 
-        fxy_train_y=train_y.values
         return fxy_train_x,fxy_train_y
 
     def transform(self,test_x=''):
@@ -340,7 +355,7 @@ class word2vec():
         # tokenizer
         for i in range(len(test_x)):
             payload=str(test_x.loc[i])
-            word=tokenizer(payload)
+            word=tokenizer(payload,self.punctuation)
             test_seq.append(word)
         # index
         test_index=self._index(test_seq)
