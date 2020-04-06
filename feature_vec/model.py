@@ -2,7 +2,7 @@ from keras.models import Sequential,Model
 from keras.layers import LSTM, Dense, Dropout,Input,InputLayer,SpatialDropout1D,Conv1D,MaxPool1D,Flatten,concatenate
 from keras.layers.embeddings import Embedding
 
-def lstm(max_len,input_dim,output_dim=None,weight_matrix=None,input_type='wordindex'):
+def lstm(max_len,input_dim,output_dim=None,weight_matrix=None,input_type='wordindex',class_num=1):
     model = Sequential()
     if input_type=='wordindex':
         model.add(Embedding(input_dim, output_dim, input_length=max_len))
@@ -13,11 +13,11 @@ def lstm(max_len,input_dim,output_dim=None,weight_matrix=None,input_type='wordin
     model.add(Dropout(0.5))
     model.add(LSTM(64, recurrent_dropout=0.5))
     model.add(Dropout(0.5))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(class_num, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
-def textcnn(max_len,input_dim,output_dim=None,weight_matrix=None,input_type='wordindex'):
+def textcnn(max_len,input_dim,output_dim=None,weight_matrix=None,input_type='wordindex',class_num=1):
     kernel_size = [2,3,4,5]
     if input_type=='wordindex':
         my_input = Input(shape=(max_len,))
@@ -41,7 +41,7 @@ def textcnn(max_len,input_dim,output_dim=None,weight_matrix=None,input_type='wor
     net = Dropout(0.5)(net)
     net = Dense(64, activation='relu')(net)
     net = Dropout(0.5)(net)
-    net = Dense(1, activation='sigmoid')(net)
+    net = Dense(class_num, activation='sigmoid')(net)
     model = Model(inputs=my_input, outputs=net)
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
