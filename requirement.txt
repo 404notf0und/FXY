@@ -1,8 +1,9 @@
 pandas
 numpy
 matplotlib
-gensim
 sklearn
 keras
 tensorflow
-tldextract
+nltk
+gensim
+requests
