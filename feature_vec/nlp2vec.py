@@ -268,9 +268,9 @@ class word2vec():
 
     def fit_transform(self,train_x='',train_y=''):
         if self.one_class:
-            model_X_samples=train_x[train_y==1].reset_index(drop=True) 
+            model_X_samples=train_x[train_y!=0].reset_index(drop=True) #negative samples to modeling word2vec model
         else:
-            model_X_samples=train_x
+            model_X_samples=train_x #all samples to modeling word2vec model
 
         # malicious samples tokenizer
         datas=[]
@@ -289,7 +289,6 @@ class word2vec():
         else:
             count.extend(counter.most_common())
         self.dictionary_count=count
-        
         vocabulary=[c[0] for c in count]
         data_set=[]
         for data in datas:
