@@ -8,15 +8,15 @@ x1,y1=data_load('part1_url.csv')
 x2,y2=data_load('part2_url2.csv')
 
 # feature engineering
-nlp=word2vec(punctuation='concise') # init feature class
-#nlp=wordindex(char_level=False,punctuation='define')
+nlp=word2vec(pretrain=True,punctuation='concise',vocabulary_size=500) # init feature class
+#nlp=wordindex(char_level=False,punctuation='concise',num_words=500)
 fx1,fy1=nlp.fit_transform(x1,y1) # training data to vec
 fx2=nlp.transform(x2) # test data to vec
-#weights=nlp.embeddings_matrix
+weights=nlp.embeddings_matrix
 
 # model training
 train_x, valid_x, train_y, valid_y = train_test_split( fx1, fy1, random_state=2019,test_size = 0.3) 
-model=textcnn(input_type='word2vec',max_len=nlp.max_length,input_dim=nlp.input_dim,output_dim=16,class_num=1)
+model=textcnn(input_type='word2vec_pretrain',max_len=nlp.max_length,input_dim=nlp.input_dim,output_dim=16,class_num=1,weight_matrix=weights)
 model.fit(train_x, train_y, validation_data=(valid_x,valid_y), epochs=1, batch_size=128)
 
 # model testing
