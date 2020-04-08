@@ -243,7 +243,7 @@ class wordindex():
         return fxy_test_x
 
 class word2vec():
-    def __init__(self,punctuation='concise',pretrain=False,one_class=False,out_dimension=3,vocabulary_size=None,num_words=None,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5):
+    def __init__(self,punctuation='concise',tunning=False,one_class=False,out_dimension=3,vocabulary_size=None,num_words=None,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5):
         self.one_class=one_class
         self.out_dimension=out_dimension
         self.vocabulary_size=vocabulary_size
@@ -260,7 +260,7 @@ class word2vec():
         self.dictionary_count=None
 
         self.embeddings_matrix=None
-        self.pretrain=pretrain
+        self.tunning=tunning
 
         self.punctuation=punctuation
 
@@ -288,7 +288,7 @@ class word2vec():
             count.extend(counter.most_common(self.vocabulary_size-1))
         else:
             count.extend(counter.most_common())
-        self.dictionary_count=count
+        
         vocabulary=[c[0] for c in count]
         data_set=[]
         for data in datas:
@@ -300,11 +300,11 @@ class word2vec():
                     d_set.append("UNK")
                     count[0][1]+=1
             data_set.append(d_set)
-        
+        self.dictionary_count=count
         # Word2Vec model
         model=Word2Vec(data_set,size=self.embedding_size,window=self.skip_window,negative=self.num_sampled,iter=self.num_iter,sorted_vocab=1)
         self.embeddings=model.wv
-
+        
         # get pretrain maxtrix
         word2idx = {"_PAD": 0}
         vocab_list = [(k, model.wv[k]) for k, v in model.wv.vocab.items()]
@@ -321,9 +321,9 @@ class word2vec():
             word=tokenizer(payload,self.punctuation)
             train_seq.append(word)
 
-        self.dictionary=dict([(self.embeddings.index2word[i],i) for i in range(len(self.embeddings.index2word))])
+        self.dictionary=dict([(self.embeddings.index2word[i],i+1) for i in range(len(self.embeddings.index2word))])
         self.reverse_dictionary={v:k for k,v in self.dictionary.items()}
-
+        
         #word2index
         train_index=self._index(train_seq)
         if self.max_length:
@@ -337,8 +337,8 @@ class word2vec():
             fxy_train_y=to_categorical(train_y)
         else:
             fxy_train_y=train_y.values 
-        # if pretrain or not    
-        if self.pretrain:
+        # if tunning or not    
+        if self.tunning:
             self.input_dim=self.embeddings_matrix.shape[0]
             return train_index,fxy_train_y
 
@@ -360,7 +360,7 @@ class word2vec():
         # index
         test_index=self._index(test_seq)
         test_index=pad_sequences(test_index,maxlen=self.max_length)
-        if self.pretrain:
+        if self.tunning:
             return test_index
         # vec
         if self.out_dimension==3:

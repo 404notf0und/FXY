@@ -26,12 +26,12 @@ def textcnn(max_len,input_dim,output_dim=None,weight_matrix=None,input_type='wor
     elif input_type=='word2vec':
         my_input = Input(shape=(max_len,input_dim))
         emb = SpatialDropout1D(0.2)(my_input)
-    elif input_type=='word2vec_pretrain':
+    elif input_type=='word2vec_tunning':
         my_input = Input(shape=(max_len,))
         emb = Embedding(input_dim, output_dim, input_length=max_len, weights=[weight_matrix], trainable=True)(my_input)
         emb = SpatialDropout1D(0.2)(emb)
     else:
-        raise ValueError('input_type consists of wordindex,word2vec,word2vec_pretrain')
+        raise ValueError('input_type consists of wordindex,word2vec,word2vec_tunning')
         
     net = []
     for kernel in kernel_size:
