@@ -12,7 +12,7 @@ def data_load(file=None):
     if file:
         file=os.path.join(datadir,file)
         samples=pd.read_csv(file)
-        samples=samples.sample(frac=1).reset_index()
+        samples=samples.sample(frac=1,random_state=2020).reset_index()
         x=samples['payload'].astype('str')
         x=x.apply(decode)
         if 'label' in samples.columns:
