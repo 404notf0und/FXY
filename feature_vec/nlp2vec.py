@@ -59,7 +59,7 @@ class tfidf():
     #     plt.legend((type1, type2),('normal','malicious'))
     #     plt.show()
 
-def tokenizer(payload,punctuation):
+def tokenizer(payload,punctuation='concise'):
     #数字泛化为"0"
     payload=payload.lower()
     payload=unquote(unquote(payload))
@@ -214,7 +214,6 @@ class wordindex():
         # note that index 0 is reserved, never assigned to an existing word
         self.word_index = dict(
             list(zip(sorted_voc, list(range(1, len(sorted_voc) + 1)))))
-
         self.index_word = dict((c, w) for w, c in self.word_index.items())
 
         for w, c in list(self.word_docs.items()):
@@ -229,7 +228,6 @@ class wordindex():
         else:
             fxy_train_x=pad_sequences(train_x)
             self.max_length=len(fxy_train_x[0])
-
         self.input_dim = len(self.word_index)+1
 
         if train_y.nunique()>2:
@@ -245,7 +243,7 @@ class wordindex():
         return fxy_test_x
 
 class word2vec():
-    def __init__(self,punctuation='concise',pretrain=False,one_class=True,out_dimension=3,vocabulary_size=None,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5,max_log_length=1024):
+    def __init__(self,punctuation='concise',pretrain=False,one_class=False,out_dimension=3,vocabulary_size=None,num_words=None,max_length=None,embedding_size=16,skip_window=5,num_sampled=64,num_iter=5):
         self.one_class=one_class
         self.out_dimension=out_dimension
         self.vocabulary_size=vocabulary_size
@@ -265,6 +263,8 @@ class word2vec():
         self.pretrain=pretrain
 
         self.punctuation=punctuation
+
+        self.num_words=num_words
 
     def fit_transform(self,train_x='',train_y=''):
         if self.one_class:
@@ -302,7 +302,7 @@ class word2vec():
             data_set.append(d_set)
         
         # Word2Vec model
-        model=Word2Vec(data_set,size=self.embedding_size,window=self.skip_window,negative=self.num_sampled,iter=self.num_iter)
+        model=Word2Vec(data_set,size=self.embedding_size,window=self.skip_window,negative=self.num_sampled,iter=self.num_iter,sorted_vocab=1)
         self.embeddings=model.wv
 
         # get pretrain maxtrix
@@ -327,10 +327,11 @@ class word2vec():
         #word2index
         train_index=self._index(train_seq)
         if self.max_length:
-            train_index=pad_sequences(train_index,maxlen=self.max_length,value=0)
+            train_index=pad_sequences(train_index,maxlen=self.max_length)
         else:
-            train_index=pad_sequences(train_index,value=0)
+            train_index=pad_sequences(train_index)
             self.max_length=len(train_index[0])
+        
         # label class num
         if train_y.nunique()>2:
             fxy_train_y=to_categorical(train_y)
@@ -358,7 +359,7 @@ class word2vec():
             test_seq.append(word)
         # index
         test_index=self._index(test_seq)
-        test_index=pad_sequences(test_index,maxlen=self.max_length,value=0)
+        test_index=pad_sequences(test_index,maxlen=self.max_length)
         if self.pretrain:
             return test_index
         # vec
@@ -375,9 +376,13 @@ class word2vec():
             index=[]
             for word in x:
                 if word in self.dictionary.keys():
-                    index.append(self.dictionary[word])
+                    if self.num_words and self.dictionary[word] >self.num_words :
+                        continue
+                    else:
+                        index.append(self.dictionary[word])
                 else:
-                    index.append(0)
+                    #index.append(0)
+                    continue
             all_index.append(index)
         return all_index
 
@@ -418,4 +423,3 @@ class word2vec():
             all_vec[j]=vec
             j=j+1
         return all_vec
-
