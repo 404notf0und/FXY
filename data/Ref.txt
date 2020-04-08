@@ -1,3 +1,7 @@
 https://github.com/SparkSharly/DL_for_xss
 https://github.com/0FuzzingQ/dga_check
 https://github.com/BoneLee/dns_tunnel_dectect_with_CNN
+https://github.com/ysrc/webshell-sample
+https://github.com/JiaHeng-DLUT/Webshell-samples/
+https://github.com/typecho/typecho
+https://github.com/WordPress/WordPress
