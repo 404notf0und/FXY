@@ -22,7 +22,7 @@
 
 下图是两点起源相遇时顺手写下的idea。
 
-![image-20200410200426733](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200410200426733.png)
+![image-20200410200426733](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200410200426733.png)
 
 第三，指导思想是不断思考。第一次明确听到关于“思考”的字眼，是在实习刚入职那会，晚上七点左右主管找我的谈话，当时似乎是听懂了，现在回想起来，记得的只有两字“思考”。思考，是一种基础能力，促使我不断的对知识进行融合，思考每一种产生化学反应的可能性。
 
@@ -30,7 +30,7 @@
 
 基于以上三点起源，我开始从NLP视角重构FXY，争取打开突破口。下图为顺手记录过程中遇到的问题和解决方式。
 
-![image-20200410210736459](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200410210736459.png)
+![image-20200410210736459](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200410210736459.png)
 
 总计有20+个问题，我们把问题归类，分成安全场景、数据特征化、模型三类，其中问题较多的是数据特征化部分，重点说说这部分。
 
@@ -42,7 +42,7 @@
 
 然后是关于序列的问题，具体地说，是长文本数据特征化需求，如下图中的webshell检测等安全场景，引发了序列截断和填充的问题。
 
-![image-20200410225942891](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200410225942891.png)
+![image-20200410225942891](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200410225942891.png)
 
 短文本数据的特征化，可以保留所有原始信息。而在某些安全场景中的长文本数据，特征化比较棘手，保留全部原始信息不太现实，需要对其进行截断，截断的方式主要有字典截断、序列软截断、序列硬截断。字典截断已经在上段说过了，序列软截断是指对不在某个范围内（参数num_words控制范围大小）的数据，直接去除或填充为某值，长文本选择直接去除，缩短整体序列的长度，尽可能保留后续更多的原始信息。如果长本文数据非常非常长，那么就算有字典截断和序列软截断，截断后的序列也可能非常长，超出了模型和算力的承受范围，此时，序列硬截断（参数max_length控制）可以发挥实际作用，直接整整齐齐截断和填充序列，保留指定长度的序列数据。这里需要注意的是，为了兼容后文将说到的“预训练+微调”训练模式中的**预训练矩阵**，序列填充值默认为0。
 
@@ -54,27 +54,27 @@
 
 第一个非预期问题是，已知的库和函数不能满足我们的需求。一般来说，使用keras的文本处理类Tokenizer预处理文本数据，得到词序列索引，完全没有问题。但类Tokenizer毕竟是文本数据处理类，没有考虑到安全领域的需求。比如类Tokenizer的单词分词默认会过滤所有的特殊符号，仅保留单词，而特殊符号在安全数据中是至关重要的，很多payload的构成都有着大量特殊符号，忽略特殊符号会流失部分原始信息。虽然类Tokenizer的单词分词可以不过滤特殊符号，但其分词的自由度有限，我们需要对其魔改。首先阅读了keras的文本处理源码和序列处理源码，不仅搞懂了其结构和各函数的底层实现方式，还学到了一些trick和优质代码的特性。下图为Tokenizer类的结构。借鉴并改写Tokenizer类，加入了多种分词模式，我们实现了wordindex类。
 
-![](D:\Documents\GitHub\Always-Learning\images\keras-text-review.png)
+![](https://github.com/404notf0und/Always-Learning/blob/master/images/keras-text-review.png)
 
 第二个非预期问题是，对word2vec的理解不到位，尤其是其底层原理和代码实现，导致会有一些疑惑，无法得到验证，这是潜在的问题。虽然可以直接调用gensim库中的word2vec类暂时解决问题，但我还是决定把word2vec深究深究，一方面可以答疑解惑，另一方面，就算不能调用别人的库，自己也可以造轮子自给自足。限于篇幅问题，不多讲word2vec的详细原理，原理是我们私下里花时间可以搞清楚的，不算是干货，对原理有兴趣的话，这里给大家推荐几篇优质文章，在github仓库[Always-Learning](https://github.com/404notf0und/Always-Learning)中。
 
-![image-20200411153824223](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200411153824223.png)
+![image-20200411153824223](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200411153824223.png)
 
 这里，只以其中的关键点之一“负采样”来举例。word2vec本质上是一个神经网络模型，具体来说此神经网络模型是一个输入层-嵌入层-输出层的三层结构，我们用到的词嵌入向量只是神经网络模型的副产物，是模型嵌入层的权重矩阵。以word2vec实现方式之一的skip-gram方法为例，此方法本质是通过中心词预测周围词。如果有一段话，要对这段话训练一个word2vec模型，那么很明显需要输入数据，还要是打标的数据。以这段话中的某个单词为中心词为例，在一定滑动窗口内的其他单词都默认和此单词相关，此单词和周围其他单词，一对多产生多个组合，默认是相关的，因此label为1，即是输入数据的y为1，而这些单词组合的one-hot编码是输入数据的x。那么很明显label全为1，全为positive sample，需要负采样来中和。这里的负采样不是简单地从滑动窗口外采样，而是按照词频的概率，取概率最小的一批样本来做负样本（这个概念下面马上要用到），因为和中心词毫不相关，自然label为0。负采样的原理到这里简单说完，talk “talk is cheap，show me your code” is cheap，看到对应代码的实现才心里踏实。word2vec的底层代码实现有多种方式，有tensorflow1.x版的，有keras版的，为了适应新版tensorflow，我用tensorflow2.x改写了tensorflow1.x版的word2vec，几种不同实现的代码在FXY仓库的[**tutorials**](https://github.com/404notf0und/FXY/tree/master/tutorials)文件夹。其实原理都相同，只是其中的写法不同。以原生的tensorflow2.x版为例，跟踪一下负采样的实现，tensorflow中的nce_loss函数实现了loss和负采样。
 
-![image-20200411161310765](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200411161310765.png)
+![image-20200411161310765](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200411161310765.png)
 
 以负采样参数num_sampled为线索，跟进nce_loss函数，
 
-![image-20200411162156323](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200411162156323.png)
+![image-20200411162156323](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200411162156323.png)
 
 跟进_compute_sampled_logits()函数，该函数负责采样
 
-![image-20200411162357196](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200411162357196.png)
+![image-20200411162357196](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200411162357196.png)
 
 一直往下跟，遇到点问题，tensorflow的超底层代码太难懂，没有明确跟到负样本的产生。这里，联想上面我们说到负采样是按照词频的概率，取概率最小的一批样本来做负样本，再对应到tensorflow官方实现的word2vec代码中的下段代码，下段代码实现了词频排序。
 
-![image-20200411165843584](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200411165843584.png)
+![image-20200411165843584](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200411165843584.png)
 
 那么log_uniform_candidate_sampler函数极有可能利用参数labels、num_sampled、num_classes生成一批接近vocabulary_size大小的随机数，作为负样本。
 
@@ -88,7 +88,7 @@
 
 首先是安全数据，目前收集、测试通过了6种安全数据，之后会继续扩充。
 
-![image-20200411185410705](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200411185410705.png)
+![image-20200411185410705](https://github.com/404notf0und/Always-Learning/blob/master/images/image-20200411185410705.png)
 
 文件命名中第一个A/B标记了数据是否异源（这里对异源的定义是数据来自不同的github仓库），第二个A/B标记了训练集/测试集。
 
