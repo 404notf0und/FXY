@@ -1,9 +1,0 @@
-pandas
-numpy
-matplotlib
-sklearn
-keras
-tensorflow
-nltk
-gensim
-requests
