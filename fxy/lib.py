@@ -1,8 +1,8 @@
 import os
 import pandas as pd
+import numpy as np
 import requests
 from urllib.parse import unquote
-import numpy as np
 from sklearn.metrics import classification_report
 
 def data_load(file=None):

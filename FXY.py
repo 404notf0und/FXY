@@ -1,7 +1,7 @@
-from feature_vec.lib import data_load,model_metrics
-from feature_vec.nlp2vec import tfidf,wordindex,word2vec
+from fxy.lib import data_load,model_metrics
+from fxy.nlp2vec import tfidf,wordindex,word2vec
+from fxy.model import lstm,textcnn
 from sklearn.model_selection import train_test_split
-from feature_vec.model import lstm,textcnn
 
 # data load
 x1,y1=data_load('part6A_spamail_A.csv')
